@@ -1,45 +1,62 @@
 import { useState } from 'react';
+
 export default function TweetForm({ onSubmit, onCancel }) {
-  const [formData, setFormData] = useState({ tweetUrl: '', author: '', content: '', date: '' });
+  const [tweetUrl, setTweetUrl] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    if (!formData.tweetUrl || !formData.author || !formData.content) {
-      setError('Please fill all required fields');
+
+    if (!tweetUrl.trim()) {
+      setError('Please paste a tweet link');
       return;
     }
-    onSubmit(formData);
-    setFormData({ tweetUrl: '', author: '', content: '', date: '' });
+
+    if (!tweetUrl.includes('x.com') && !tweetUrl.includes('twitter.com')) {
+      setError('Please paste a valid X/Twitter link (https://x.com/user/status/...))');
+      return;
+    }
+
+    setLoading(true);
+
+    // Extract author from URL
+    const authorMatch = tweetUrl.match(/x\.com\/([a-zA-Z0-9_]+)/);
+    const author = authorMatch ? `@${authorMatch[1]}` : '@User';
+
+    // Create tweet data
+    const tweetData = {
+      tweetUrl: tweetUrl,
+      author: author,
+      content: 'Tweet saved',
+      date: new Date().toLocaleDateString(),
+    };
+
+    setTimeout(() => {
+      onSubmit(tweetData);
+      setTweetUrl('');
+      setLoading(false);
+    }, 300);
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-gray-300 mb-2">Tweet URL *</label>
-        <input type="url" name="tweetUrl" value={formData.tweetUrl} onChange={handleChange} placeholder="https://x.com/user/status/..." className="w-full bg-dark border border-gray-600 rounded px-4 py-2 text-white" />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Author *</label>
-          <input type="text" name="author" value={formData.author} onChange={handleChange} placeholder="@username" className="w-full bg-dark border border-gray-600 rounded px-4 py-2 text-white" />
-        </div>
-        <div>
-          <label className="block text-gray-300 mb-2">Date</label>
-          <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-dark border border-gray-600 rounded px-4 py-2 text-white" />
-        </div>
-      </div>
-      <div>
-        <label className="block text-gray-300 mb-2">Content *</label>
-        <textarea name="content" value={formData.content} onChange={handleChange} placeholder="Tweet content..." rows="4" className="w-full bg-dark border border-gray-600 rounded px-4 py-2 text-white" />
-      </div>
+      <input
+        type="url"
+        value={tweetUrl}
+        onChange={(e) => setTweetUrl(e.target.value)}
+        placeholder="https://x.com/user/status/..."
+        className="w-full bg-dark border border-gray-600 rounded-full px-6 py-4 text-white placeholder-gray-500 focus:border-primary outline-none"
+      />
       {error && <p className="text-red-500 text-sm">{error}</p>}
-      <div className="flex gap-4">
-        <button type="submit" className="btn-primary flex-1">SUBMIT</button>
-        <button type="button" onClick={onCancel} className="btn-secondary flex-1">CANCEL</button>
+      <div className="flex gap-3">
+        <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-50">
+          {loading ? 'ADDING...' : 'ADD TWEET'}
+        </button>
+        <button type="button" onClick={onCancel} className="btn-secondary flex-1">
+          CANCEL
+        </button>
       </div>
     </form>
   );
